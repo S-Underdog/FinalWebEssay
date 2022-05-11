@@ -26,11 +26,10 @@ const UserSchema = new Schema({
     },
     fontID: {
         type: String,
-        required: true,
     },
     backID: {
         type: String,
-        required: true,
+
     },
     username: {
         type: Number,
@@ -40,7 +39,7 @@ const UserSchema = new Schema({
         type: String,
         required: true,
     },
-    
+
 
 })
 

@@ -3,7 +3,7 @@ const { validationResult } = require('express-validator')
 const bcrypt = require('bcrypt')
 const fs = require('fs')
 const router = express.Router()
-
+const nodemailer = require('nodemailer')
 const User = require('../models/UserModel')
 const registerValidator = require('../validators/registerValidator')
 
@@ -27,12 +27,35 @@ router.post('/register', registerValidator, (req, res) => {
 
         const password = Math.random().toString(36).substring(2, 8);
         const username = new Date().getTime().toString().slice(-11, -1)
+        const email = req.body.email
 
-        res.json({ code: 1, message: "Đăng ký thành công", password: password, username: username, userDir: userDir })
-        return fs.mkdir(userDir, ()=> {
-            const saltRounds  = 10;
+        return fs.mkdir(userDir, () => {
+            const saltRounds = 10;
             const salt = bcrypt.genSaltSync(saltRounds)
-            const hash = bcrypt.hashSync(password,salt)
+            const hash = bcrypt.hashSync(password, salt)
+
+            // Create transport
+            const transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: 'sudtechnology.group@gmail.com',
+                    pass: 'nodem@iler.com'
+                },
+                tls: {
+                    rejectUnauthorized: false,
+                }
+            });
+
+            const msg = {
+                from: '"Ví Điện tử SUD 👻" <sudtechnology.group@gmail.com>',
+                to: `${email}`,
+                subject: "WELCOME TO SUD ✔",
+                text: "Đây là thông tin về tài khoản của bạn",
+                html: `
+                    <h2>Username: ${username}</h2>
+                    <h2>Password: ${password}</h2>
+                `
+            }
 
             let user = {
                 email: req.body.email,
@@ -43,7 +66,21 @@ router.post('/register', registerValidator, (req, res) => {
                 username: username,
                 password: hash
             }
-            return new User(user).save().then(res.redirect('/user/login'), req.flash('success', "Đăng ký thành công")).catch(req.flash('error', 'Đăng ký thất bại'))
+            return new User(user).save()
+                .then(() => {
+                    transporter.sendMail(msg, (err, success) => {
+                        if (err)
+                            console.log(err)
+                        else
+                            console.log('Email send successfully')
+                    })
+                    req.flash('success', "Đăng ký thành công")
+                    res.redirect('/login')
+                })
+                .catch(() => {
+                    req.flash('error', "Đăng ký thất bại")
+                })
+
         })
 
 
