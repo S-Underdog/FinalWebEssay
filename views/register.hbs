@@ -1,7 +1,6 @@
 <body class="bg-secondary">
 
     <h3 class="text-center my-5 text-light">Account Registration</h3>
-
     <!-- buộc toàn bộ dòng và cột phải bỏ trong class container -->
     <div class="container">
         <div class="row justify-content-center">
@@ -22,26 +21,73 @@
 
                         </div>
                         <div class="form-group">
-                            <label for="pass">Password</label>
+                            <label for="pass">Họ và tên</label>
                             <div class="input-group mb-3">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
                                         <i class="fas fa-lock"></i>
                                     </span>
                                 </div>
-                                <input type="password" name="password" value="{{password}}" class="form-control"
-                                    placeholder="Password">
+                                <input type="text" name="fullname" value="{{fullname}}" class="form-control"
+                                    placeholder="Họ và tên">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="pass">Confirm Password</label>
+                            <label for="pass">Số điện thoại</label>
                             <div class="input-group mb-3">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
                                         <i class="fas fa-lock"></i>
                                     </span>
                                 </div>
-                                <input type="password" name="Repassword" class="form-control" placeholder="Password">
+                                <input type="text" name="phone" value="{{phone}}" class="form-control"
+                                    placeholder="Số điện thoại">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pass">Ngày tháng năm sinh</label>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                </div>
+                                <input type="date" name="birth" value="{{birth}}" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pass">Địa chỉ</label>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                </div>
+                                <input type="tẽt" name="address" value="{{address}}" class="form-control"
+                                    placeholder="Địa chỉ">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pass">Mặt trước CMND</label>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                </div>
+                                <input type="file" name="frontID" class="form-control" placeholder="CMND">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pass">Mặt sau CMND</label>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                </div>
+                                <input type="file" name="backID" class="form-control" placeholder="CMND">
                             </div>
                         </div>
                         {{#if error}}
