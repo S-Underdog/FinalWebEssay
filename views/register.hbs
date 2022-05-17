@@ -6,7 +6,7 @@
         <div class="row justify-content-center">
             <div class="col-md-10 col-lg-8 col-xl-5">
                 <div class="border p-3 rounded bg-light">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="user">Email</label>
                             <div class="input-group mb-3">
@@ -15,8 +15,9 @@
                                         <i class="fas fa-user"></i>
                                     </span>
                                 </div>
-                                <input id="email" name="email" value="{{email}}" type="text" class="form-control"
+                                <input id="email" name="email" value="{{email}}" type="email" class="form-control"
                                     placeholder="Email">
+
                             </div>
 
                         </div>
@@ -63,7 +64,7 @@
                                         <i class="fas fa-lock"></i>
                                     </span>
                                 </div>
-                                <input type="tẽt" name="address" value="{{address}}" class="form-control"
+                                <input type="text" name="address" value="{{address}}" class="form-control"
                                     placeholder="Địa chỉ">
                             </div>
                         </div>
@@ -76,7 +77,7 @@
                                         <i class="fas fa-lock"></i>
                                     </span>
                                 </div>
-                                <input type="file" name="frontID" class="form-control" placeholder="CMND">
+                                <input type="file" accept='image/*' name="frontID" class="form-control">
                             </div>
                         </div>
                         <div class="form-group">
@@ -87,7 +88,7 @@
                                         <i class="fas fa-lock"></i>
                                     </span>
                                 </div>
-                                <input type="file" name="backID" class="form-control" placeholder="CMND">
+                                <input type="file" accept='image/*' name="backID" class="form-control">
                             </div>
                         </div>
                         {{#if error}}
@@ -102,7 +103,7 @@
                             <button class="btn btn-success px-5" type="submit">Register</button>
                         </div>
                         <div class="form-group">
-                            <p>Already have an account? <a href="/account/login">Login now!</a></p>
+                            <p>Already have an account? <a href="/user/login">Login now!</a></p>
                         </div>
                     </form>
                 </div>

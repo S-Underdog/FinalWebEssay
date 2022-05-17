@@ -1,4 +1,4 @@
-const { check } = require('express-validator')
+const { check, body } = require('express-validator')
 const User = require('../models/UserModel')
 
 module.exports = [
@@ -44,4 +44,5 @@ module.exports = [
                 return true
             })
         })
+
 ]

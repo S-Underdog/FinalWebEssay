@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
+
 const UserSchema = new Schema({
     phone: {
         type: Number,
@@ -39,8 +40,14 @@ const UserSchema = new Schema({
         type: String,
         required: true,
     },
-
-
+    frontID: {
+        type: String,
+        required: true,
+    },
+    backID: {
+        type: String,
+        required: true,
+    }
 })
 
 module.exports = mongoose.model('User', UserSchema)

@@ -7,10 +7,7 @@ const flash = require('express-flash')
 const session = require('express-session')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
-const fs = require('fs')
-const multer = require('multer')
 const database = require('./config/db')
-const uploader = multer({ dest: __dirname + '/uploads/' })
 
 // Import router
 const UserRouter = require('./routers/UserRouter')
@@ -34,7 +31,10 @@ app.use((req, res, next) => {
 })
 
 app.get('/', (req, res) => {
-    res.render('register')
+    if (!req.session.username) {
+        return res.redirect('/user/register')
+    }
+    res.render('index')
 })
 
 // User Router
