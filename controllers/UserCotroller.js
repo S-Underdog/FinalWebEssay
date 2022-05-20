@@ -3,11 +3,11 @@ const fs = require('fs')
 const nodemailer = require('nodemailer')
 const User = require('../models/UserModel')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
 
-const allow_file = ["image/png", "image/jpg", "image/gif", "image/jpeg"]
 
-function fileValidator (req) {
+function fileValidator(req) {
     let message
     if (!req.files['frontID']) {
         message = 'Không được bỏ trống mặt trước CMND'
@@ -31,7 +31,7 @@ const UserController = {
     postRegister: function (req, res, next) {
         let result = validationResult(req)
         let message = fileValidator(req) || ''
-        
+
         if (result.errors.length === 0 && !message) {
             const { root } = req.vars
             const userDir = `${root}/public/uploads/users/${req.body.email}`
@@ -44,14 +44,25 @@ const UserController = {
                 const salt = bcrypt.genSaltSync(saltRounds)
                 const hash = bcrypt.hashSync(password, salt)
                 // Create transport
+                // const transporter = nodemailer.createTransport({
+                //     host: 'mail.phongdaotao.com',
+                //     port: 25,
+                //     secure: false,
+                //     auth: {
+                //         user: "sinhvien@phongdaotao.com",
+                //         pass: "svtdtu",
+                //     },
+                //     tls: {
+                //         rejectUnauthorized: false,
+                //     }
+                // });
+
                 const transporter = nodemailer.createTransport({
-                    service: "gmail",
+                    host: 'smtp.ethereal.email',
+                    port: 587,
                     auth: {
-                        user: 'sudtechnology.group@gmail.com',
-                        pass: 'nodem@iler.com'
-                    },
-                    tls: {
-                        rejectUnauthorized: false,
+                        user: 'dedric.reinger31@ethereal.email',
+                        pass: 'tF9pGX7gR9CfFBy7y3'
                     }
                 });
 
@@ -87,6 +98,7 @@ const UserController = {
                     frontID: imagePath[0],
                     backID: imagePath[1]
                 }
+
                 return new User(user).save()
                     .then(() => {
                         transporter.sendMail(msg, (err, success) => {
@@ -96,7 +108,7 @@ const UserController = {
                                 console.log('Email send successfully')
                         })
                         req.flash('success', "Đăng ký thành công")
-                        res.redirect('/login')
+                        res.redirect('/user/login')
                     })
                     .catch(() => {
                         req.flash('error', "Đăng ký thất bại")
@@ -122,12 +134,63 @@ const UserController = {
     getLogin: function (req, res, next) {
         const error = req.flash('error') || ""
         const username = req.flash('username') || ""
-        const password = req.flash('password') || ""
-        res.render('login', { error, username, password })
+        res.render('login', { error, username })
     },
 
     postLogin: function (req, res, next) {
+        let result = validationResult(req)
+        if (result.errors.length === 0) {
+            let { username, password } = req.body
+            req.flash('username', username)
+            let account = undefined
+            return User.findOne({ username: username })
+                .then(acc => {
+                    if (!acc) {
+                        req.flash('error', 'Username ' + username + " không tồn tại")
+                        res.redirect('/user/login')
+                    }
+                    account = acc
+                    return bcrypt.compare(password, acc.password)
+                })
+                .then(match => {
+                    if (!match) {
+                        req.flash('error', 'Mật khẩu không đúng')
+                        res.redirect('/user/login');
+                    }
+                    const { JWT_SECRET } = process.env
+                    jwt.sign({
+                        username: account.username,
+                    }, JWT_SECRET, {
+                        expiresIn: '15m'
+                    }, (err, token) => {
+                        if (err) {
+                            req.flash('error', 'Đăng nhập thất bại: ' + err)
+                            res.redirect('/user/login')
+                        } else {
+                            req.session.username = username
+                            req.session.token = token
+                            req.flash('success', 'Đăng nhập thành công')
+                            res.redirect('/')
 
+                        }
+                    })
+                })
+        } else {
+            result = result.mapped()
+            let message
+            for (m in result) {
+                message = result[m].msg
+                break
+            }
+            const { username } = req.body
+            req.flash('error', message)
+            req.flash('username', username)
+            res.redirect('/user/login')
+        }
+    },
+
+    getUserInfo: function (req, res, next) {
+        res.json({ code: 0, message: "test thành công" })
     }
 }
 

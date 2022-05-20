@@ -25,15 +25,12 @@ const UserSchema = new Schema({
         type: String,
         required: true,
     },
-    fontID: {
-        type: String,
-    },
-    backID: {
-        type: String,
-
+    active: {
+        type: Boolean,
+        default: false
     },
     username: {
-        type: Number,
+        type:  String,
         required: true,
     },
     password: {

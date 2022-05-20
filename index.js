@@ -8,7 +8,6 @@ const session = require('express-session')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 const database = require('./config/db')
-
 // Import router
 const UserRouter = require('./routers/UserRouter')
 
@@ -32,7 +31,7 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
     if (!req.session.username) {
-        return res.redirect('/user/register')
+        return res.redirect('/user/login')
     }
     res.render('index')
 })
