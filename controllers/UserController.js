@@ -18,6 +18,9 @@ function fileValidator(req) {
 }
 
 const UserController = {
+    getIndex: function (req, res, next) {
+        res.render('index')
+    },
     getRegister: function (req, res, next) {
         const error = req.flash('error') || ""
         const email = req.flash('email') || ""
@@ -170,7 +173,7 @@ const UserController = {
                             req.session.username = username
                             req.session.token = token
                             req.flash('success', 'Đăng nhập thành công')
-                            res.redirect('/')
+                            res.redirect('/user/')
 
                         }
                     })
@@ -191,6 +194,35 @@ const UserController = {
 
     getUserInfo: function (req, res, next) {
         res.json({ code: 0, message: "test thành công" })
+    },
+
+    getResetPassword: function (req, res, next) {
+        const error = req.flash('error') || ""
+        const oldPass = req.flash('oldPass') || ""
+        const newPass = req.flash('newPass') || ""
+        const rePass = req.flash('rePass') || ""
+        res.render('resetPassword', { error, oldPass, newPass, rePass })
+    },
+
+    postResetPassword: function (req, res, next) {
+        let result = validationResult(req)
+        if (result.errors.length === 0) {
+            res.json({code: 1, message: "đặt mk thành công"})
+        } else {
+            result = result.mapped()
+            let message
+            for (m in result) {
+                message = result[m].msg
+                break
+            }
+            const { oldPass, newPass, rePass } = req.body
+            req.flash('error', message)
+            req.flash('oldPass', oldPass)
+            req.flash('rePass', rePass)
+            req.flash('newPass', newPass)
+            res.redirect('/user/')
+        }
+        
     }
 }
 
