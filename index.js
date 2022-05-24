@@ -23,6 +23,7 @@ app.use(session({ cookie: { maxAge: 60000 } }))
 app.use(flash())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.json())
+app.use(express.static('public'))
 // Send dirname
 app.use((req, res, next) => {
     req.vars = { root: __dirname }

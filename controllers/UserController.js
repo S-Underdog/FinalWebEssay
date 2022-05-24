@@ -17,6 +17,12 @@ function fileValidator(req) {
     return message
 }
 
+function hashPassword(password) {
+    let saltRounds = 10;
+    let salt = bcrypt.genSaltSync(saltRounds)
+    return bcrypt.hashSync(password, salt)
+}
+
 const UserController = {
     getIndex: function (req, res, next) {
         res.render('index')
@@ -30,7 +36,6 @@ const UserController = {
         const birth = req.flash('birth') || ""
         res.render('register', { error: error, email, fullname, phone, address, birth })
     },
-
     postRegister: function (req, res, next) {
         let result = validationResult(req)
         let message = fileValidator(req) || ''
@@ -43,9 +48,7 @@ const UserController = {
             const { email } = req.body
             return fs.mkdir(userDir, () => {
 
-                const saltRounds = 10;
-                const salt = bcrypt.genSaltSync(saltRounds)
-                const hash = bcrypt.hashSync(password, salt)
+                const hash = hashPassword(password)
                 // Create transport
                 // const transporter = nodemailer.createTransport({
                 //     host: 'mail.phongdaotao.com',
@@ -64,8 +67,8 @@ const UserController = {
                     host: 'smtp.ethereal.email',
                     port: 587,
                     auth: {
-                        user: 'dedric.reinger31@ethereal.email',
-                        pass: 'tF9pGX7gR9CfFBy7y3'
+                        user: 'leatha.schultz15@ethereal.email',
+                        pass: 'Gyj2RXW4Uw7rcCWFux'
                     }
                 });
 
@@ -110,7 +113,7 @@ const UserController = {
                             else
                                 console.log('Email send successfully')
                         })
-                        req.flash('success', "Đăng ký thành công")
+                        req.flash('success', "Đăng ký thành công, vui lòng đăng nhập")
                         res.redirect('/user/login')
                     })
                     .catch(() => {
@@ -137,12 +140,15 @@ const UserController = {
     getLogin: function (req, res, next) {
         const error = req.flash('error') || ""
         const username = req.flash('username') || ""
-        res.render('login', { error, username })
+        const fail = req.flash('fail') || false
+        const success = req.flash('success') || ""
+        res.render('login', { error, success, username, fail })
     },
 
     postLogin: function (req, res, next) {
         let result = validationResult(req)
-        if (result.errors.length === 0) {
+        let errorLength = result.errors.length
+        if (errorLength === 0) {
             let { username, password } = req.body
             req.flash('username', username)
             let account = undefined
@@ -157,39 +163,59 @@ const UserController = {
                 })
                 .then(match => {
                     if (!match) {
-                        req.flash('error', 'Mật khẩu không đúng')
-                        res.redirect('/user/login');
-                    }
-                    const { JWT_SECRET } = process.env
-                    jwt.sign({
-                        username: account.username,
-                    }, JWT_SECRET, {
-                        expiresIn: '15m'
-                    }, (err, token) => {
-                        if (err) {
-                            req.flash('error', 'Đăng nhập thất bại: ' + err)
-                            res.redirect('/user/login')
-                        } else {
-                            req.session.username = username
-                            req.session.token = token
-                            req.flash('success', 'Đăng nhập thành công')
-                            res.redirect('/user/')
+                        account.failAccess = (account.failAccess + 1)
+                        req.session.failAccess = account.failAccess
+                        return account.save((err, data) => {
+                            if (err)
+                                console.log(err)
+                            else {
+                                // req.flash('error', 'Mật khẩu không đúng')
+                                req.flash('fail', true)
+                                res.redirect('/user/login');
+                            }
+                        })
+                    } else {
+                        account.failAccess = 0
+                        req.session.failAccess = account.failAccess
+                        return account.save((err, data) => {
+                            const { JWT_SECRET } = process.env
+                            jwt.sign({
+                                username: account.username,
+                            }, JWT_SECRET, {
+                                expiresIn: '15m'
+                            }, (err, token) => {
+                                if (err) {
+                                    req.flash('error', 'Đăng nhập thất bại: ' + err)
+                                    res.redirect('/user/login')
+                                } else {
+                                    req.session.username = username
+                                    req.session.token = token
+                                    req.flash('success', 'Đăng nhập thành công')
+                                    res.redirect('/user/')
 
-                        }
-                    })
+                                }
+                            })
+                        })
+                    }
                 })
         } else {
-            result = result.mapped()
             let message
+            const { username } = req.body
+            result = result.mapped()
             for (m in result) {
                 message = result[m].msg
                 break
             }
-            const { username } = req.body
             req.flash('error', message)
             req.flash('username', username)
-            res.redirect('/user/login')
+            return res.redirect('/user/login')
+
         }
+    },
+
+    getLogout: function (req, res, next) {
+        req.session.destroy();
+        res.redirect('/');
     },
 
     getUserInfo: function (req, res, next) {
@@ -207,7 +233,15 @@ const UserController = {
     postResetPassword: function (req, res, next) {
         let result = validationResult(req)
         if (result.errors.length === 0) {
-            res.json({code: 1, message: "đặt mk thành công"})
+            User.findOneAndUpdate({ username: req.session.username }, {
+                password: hashPassword(req.body.newPass),
+                active: true
+            }, (err, data) => {
+                if (err)
+                    console.log(err)
+                else
+                    res.redirect('/user/')
+            })
         } else {
             result = result.mapped()
             let message
@@ -222,7 +256,7 @@ const UserController = {
             req.flash('newPass', newPass)
             res.redirect('/user/')
         }
-        
+
     }
 }
 

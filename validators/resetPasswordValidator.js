@@ -3,10 +3,10 @@ const User = require('../models/UserModel')
 const bcrypt = require('bcrypt')
 
 module.exports = [
-    check('oldPass')
-        .exists().withMessage('Vui lòng nhập mật khẩu cũ')
-        .notEmpty().withMessage('Mật khẩu cũ không được bỏ trống')
-        .isLength({ min: 6 }).withMessage('Mật khẩu cũ không hợp lệ')
+    check('newPass')
+        .exists().withMessage('Vui lòng nhập mật khẩu mới')
+        .notEmpty().withMessage('Không được bỏ trống mật khẩu mới')
+        .isLength({ min: 6 }).withMessage('Mật khẩu mới không hợp lệ')
         .custom((value, { req }) => {
             const username = req.session.username
             return User.findOne({ username: username })
@@ -14,16 +14,11 @@ module.exports = [
                     return bcrypt.compare(value, account.password)
                 })
                 .then(match => {
-                    if (!match)
-                        throw new Error('Mật khẩu cũ không chính xác')
+                    if (match)
+                        throw new Error('Mật khẩu trùng với mật khẩu cũ')
                     return true
                 })
         }),
-
-    check('newPass')
-        .exists().withMessage('Vui lòng nhập mật khẩu mới')
-        .notEmpty().withMessage('Không được bỏ trống mật khẩu mới')
-        .isLength({ min: 6 }).withMessage('Mật khẩu mới không hợp lệ'),
 
     check('rePass')
         .exists().withMessage('Vui lòng xác nhận mật khẩu mới')

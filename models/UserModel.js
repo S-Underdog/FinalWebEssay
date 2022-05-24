@@ -30,7 +30,7 @@ const UserSchema = new Schema({
         default: false
     },
     username: {
-        type:  String,
+        type: String,
         required: true,
     },
     password: {
@@ -44,6 +44,14 @@ const UserSchema = new Schema({
     backID: {
         type: String,
         required: true,
+    },
+    status: {
+        type: String,
+        default: "Not_verified"
+    },
+    failAccess: {
+        type: Number,
+        default: 0
     }
 })
 
