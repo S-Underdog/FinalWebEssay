@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer')
 const User = require('../models/UserModel')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const CreditCard = require('../models/CreditCard')
 
 
 
@@ -44,6 +45,7 @@ const UserController = {
             const { root } = req.vars
             const userDir = `${root}/public/uploads/users/${req.body.email}`
             const password = Math.random().toString(36).substring(2, 8);
+            console.log(password);
             const username = new Date().getTime().toString().slice(-11, -1);
             const { email } = req.body
             return fs.mkdir(userDir, () => {
@@ -64,11 +66,15 @@ const UserController = {
                 // });
 
                 const transporter = nodemailer.createTransport({
-                    host: 'smtp.ethereal.email',
-                    port: 587,
+                    host: 'mail.phongdaotao.com',
+                    port: 25,
+                    secure: false,
                     auth: {
-                        user: 'leatha.schultz15@ethereal.email',
-                        pass: 'Gyj2RXW4Uw7rcCWFux'
+                        user: 'sinhvien@phongdaotao.com',
+                        pass: 'svtdtu'
+                    },
+                    tls: {
+                        rejectUnauthorized: false,
                     }
                 });
 
@@ -257,7 +263,119 @@ const UserController = {
             res.redirect('/user/')
         }
 
+    },
+
+    getDepositPage: function(req, res, next) {
+        User.findOne({username: req.session.username})
+            .then(user => {
+                const balance = user.balance;
+                const error = req.flash('error') || '';
+                return res.render('deposit', {error, balance});
+            })
+            .catch(next);
+        
+    },
+
+    postDepositPage: function(req, res, next) {
+        // req.session.username = '5360180319'; // test
+        let errors = validationResult(req);
+        if(!errors.isEmpty()) {
+            errors = errors.mapped();
+            let message = '';
+
+            for(err in errors) {
+                message = errors[err].msg;
+                break;
+            }
+            req.flash('error', message);
+            return res.redirect('/user/deposit');
+        }
+
+        const { card_no, expired, cvv_code, amount, note } = req.body;
+        
+        CreditCard.findOne({card_no})
+            .then(card => {
+                if(!card) {
+                    req.flash('error', 'Số thẻ không đúng');
+                    return res.redirect('/user/deposit');
+                }
+
+                // if(card.expired != expired.toString()) {
+                //     console.log(card.expired, expired.toString());
+                //     req.flash('error', 'Sai ngày hết hạn');
+                //     return res.redirect('/user/deposit');
+                // }
+
+                if(card.cvv_code !== cvv_code) {
+                    req.flash('error', 'Sai mã CVV');
+                    return res.redirect('/user/deposit');
+                }
+
+                var amountInt = parseInt(amount);
+
+                if(amountInt > card.balance) {
+                    req.flash('error', 'Số dư không đủ');
+                    return res.redirect('/user/deposit');
+                }
+
+                card.balance -= amountInt;
+                card.save();
+                console.log(req.getUser);
+                User.findOne({username: req.getUser.username})
+                    .then(user => {
+                        user.balance += amountInt;
+                        const trade = {
+                            action: 'Nạp tiền',
+                            amount: amountInt,
+                            fee: 0,
+                            note: note,
+                            status: 'Hoàn thành'
+                        }
+                        user.history.push(trade);
+                        user.save();
+                        req.flash('success', 'Nạp tiền thành công')
+                        return res.redirect('/user/')
+                    })
+            })
+            .catch(next);     
+    },
+
+    getWithdrawPage: function(req, res, next) {
+        if(!req.session.username) {
+            return res.redirect('/user/login');
+        }
+
+        User.findOne({username: req.session.username})
+            .then(user => {
+                const balance = user.balance;
+                const error = req.flash('error') || '';
+                const amount = req.flash('amount') || '';
+                return res.render('withdraw', {error, amount, balance});
+
+            })
+            .catch(next);
+    },
+
+    postWithdrawPage: function(req, res, next) {
+        req.session.username = '5355027821';
+        let errors = validationResult(req);
+
+        if(!errors.isEmpty()) {
+            errors = errors.mapped();
+            let message = '';
+            for(err in errors) {
+                message = errors[err].msg;
+                break;
+            }
+            req.flash('error', message);
+            req.flash('amount', req.body.amount);
+            return res.redirect('/user/withdraw');
+        }
+
+
     }
+
+
 }
 
 module.exports = UserController

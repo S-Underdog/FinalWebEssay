@@ -52,6 +52,26 @@ const UserSchema = new Schema({
     failAccess: {
         type: Number,
         default: 0
+    },
+    balance: {
+        type: Number,
+        default: 0
+    },
+    history: {
+        type: [
+            {
+                trade_id: String,
+                action: String,
+                amount: Number,
+                fee: Number,
+                receive_code: String,
+                note: String,
+                status: String,
+            },
+            {
+                timestamp: true
+            }
+        ]
     }
 })
 

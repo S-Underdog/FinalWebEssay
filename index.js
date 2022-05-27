@@ -19,7 +19,12 @@ app.engine('hbs', handlebars.engine({
 
 // Session & Cookie
 app.use(cookieParser('tkh'))
-app.use(session({ cookie: { maxAge: 60000 } }))
+app.use(session({
+    cookie: { maxAge: 60000 }, 
+    secret: 'knd',
+    resave: false, 
+    saveUninitialized: false})
+);
 app.use(flash())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.json())

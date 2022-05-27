@@ -27,4 +27,10 @@ router.get('/getUsers', checkLogin, checkUser, UserController.getUserInfo)
 // Get one
 // Update one
 // Delete one
+
+// Deposit money
+router.get('/deposit', checkLogin, UserController.getDepositPage)
+router.post('/deposit', middleware.getUser, UserController.postDepositPage);
+// Withdraw money
+
 module.exports = router
