@@ -1,0 +1,45 @@
+<div class="container p-0 mx-auto payment-box">
+        <div class="card px-4">
+            <p class="h8 py-3">Thông tin chuyển tiền</p>
+            <span class="mb-3" style="color:black">Số dư trong ví: {{balance}} VND</span>
+            <form action="/user/transfer" method="post">
+                <div class="row gx-3">
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <p class="text mb-1">Số tiền cần chuyển</p>
+                            <input class="form-control mb-3" type="text" placeholder="0đ" name="amount">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <p class="text mb-1">Số điện thoại</p>
+                            <input class="form-control mb-3" type="text" placeholder="1234 5678 435678" name="phone">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex flex-column">
+                            <p class="text mb-1">Ghi chú</p>
+                            <input class="form-control mb-3" type="text" placeholder="..." name="note">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="custom-control custom-checkbox mb-3">
+                            <input type="checkbox" class="custom-control-input" id="defaultUnchecked" name="isFeePayer">
+                            <label class="custom-control-label" for="defaultUnchecked">Nhận chịu phí chuyển tiền</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-center">
+                        {{#if error}}
+                            <span class="alert alert-danger">{{error}}</span>
+                        {{/if}}
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary mb-3" type="submit">
+                            <span class="ps-3">Xác nhận</span>
+                            <span class="fas fa-arrow-right"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>

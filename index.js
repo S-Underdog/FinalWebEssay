@@ -8,6 +8,7 @@ const session = require('express-session')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 const database = require('./config/db')
+const path = require('path');
 // Import router
 const UserRouter = require('./routers/UserRouter')
 
@@ -28,7 +29,7 @@ app.use(session({
 app.use(flash())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.json())
-app.use(express.static('public'))
+app.use(express.static(path.join(__dirname,'public')));
 // Send dirname
 app.use((req, res, next) => {
     req.vars = { root: __dirname }

@@ -66,10 +66,8 @@ const UserSchema = new Schema({
                 fee: Number,
                 receive_code: String,
                 note: String,
+                createdAt: Date,
                 status: String,
-            },
-            {
-                timestamp: true
             }
         ]
     }

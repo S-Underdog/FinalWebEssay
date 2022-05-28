@@ -45,5 +45,5 @@ module.exports = {
     multipleUpload,
     roleResetPassword,
     roleLogin,
-    failAccess
+    failAccess,
 }

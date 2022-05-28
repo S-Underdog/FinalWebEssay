@@ -5,6 +5,7 @@ const User = require('../models/UserModel')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const CreditCard = require('../models/CreditCard')
+const { stopWithdraw, normalizeDate, checkErrorInput } = require('../middleware/functions');
 
 
 
@@ -277,34 +278,23 @@ const UserController = {
     },
 
     postDepositPage: function(req, res, next) {
-        // req.session.username = '5360180319'; // test
-        let errors = validationResult(req);
-        if(!errors.isEmpty()) {
-            errors = errors.mapped();
-            let message = '';
-
-            for(err in errors) {
-                message = errors[err].msg;
-                break;
-            }
-            req.flash('error', message);
-            return res.redirect('/user/deposit');
-        }
-
-        const { card_no, expired, cvv_code, amount, note } = req.body;
+        checkErrorInput(req, res, '/user/deposit')
+        
+        const { card_no, expired, cvv_code, amount } = req.body;
         
         CreditCard.findOne({card_no})
             .then(card => {
                 if(!card) {
-                    req.flash('error', 'Số thẻ không đúng');
+                    req.flash('error', 'Số thẻ không chính xác');
                     return res.redirect('/user/deposit');
                 }
 
-                // if(card.expired != expired.toString()) {
-                //     console.log(card.expired, expired.toString());
-                //     req.flash('error', 'Sai ngày hết hạn');
-                //     return res.redirect('/user/deposit');
-                // }
+                const cardExpired = normalizeDate(card.expired);
+
+                if(cardExpired != expired) {
+                    req.flash('error', 'Sai ngày hết hạn');
+                    return res.redirect('/user/deposit');
+                }
 
                 if(card.cvv_code !== cvv_code) {
                     req.flash('error', 'Sai mã CVV');
@@ -314,65 +304,173 @@ const UserController = {
                 var amountInt = parseInt(amount);
 
                 if(amountInt > card.balance) {
-                    req.flash('error', 'Số dư không đủ');
+                    req.flash('error', 'Số dư trong thẻ không đủ');
                     return res.redirect('/user/deposit');
                 }
 
                 card.balance -= amountInt;
                 card.save();
-                console.log(req.getUser);
-                User.findOne({username: req.getUser.username})
-                    .then(user => {
-                        user.balance += amountInt;
-                        const trade = {
-                            action: 'Nạp tiền',
-                            amount: amountInt,
-                            fee: 0,
-                            note: note,
-                            status: 'Hoàn thành'
-                        }
-                        user.history.push(trade);
-                        user.save();
-                        req.flash('success', 'Nạp tiền thành công')
-                        return res.redirect('/user/')
-                    })
+                
+                req.getUser.balance += amountInt;
+                req.getUser.history.push(
+                    {
+                        action: 'Nạp tiền',
+                        amount: amountInt,
+                        fee: 0,
+                        createdAt: new Date(),
+                        status: 'Hoàn thành'
+                    }
+                );
+                req.getUser.save();
+                req.flash('success', 'Nạp tiền thành công');
+                return res.redirect('/user/')
             })
             .catch(next);     
     },
 
     getWithdrawPage: function(req, res, next) {
-        if(!req.session.username) {
-            return res.redirect('/user/login');
-        }
-
         User.findOne({username: req.session.username})
             .then(user => {
                 const balance = user.balance;
                 const error = req.flash('error') || '';
-                const amount = req.flash('amount') || '';
-                return res.render('withdraw', {error, amount, balance});
-
+                return res.render('withdraw', {error, balance});
             })
             .catch(next);
     },
 
     postWithdrawPage: function(req, res, next) {
-        req.session.username = '5355027821';
-        let errors = validationResult(req);
-
-        if(!errors.isEmpty()) {
-            errors = errors.mapped();
-            let message = '';
-            for(err in errors) {
-                message = errors[err].msg;
-                break;
-            }
-            req.flash('error', message);
-            req.flash('amount', req.body.amount);
+        checkErrorInput(req, res, '/user/withdraw');
+        
+        const { card_no, expired, cvv_code, amount, note } = req.body;
+        
+        let isOver = stopWithdraw(req.getUser);
+        if(isOver) {
+            req.flash('error', 'Đã hết số lần giao dịch');
+            return res.redirect('/user/withdraw');
+        }
+        
+        var amountInt = parseInt(amount);
+        
+        if(amountInt % 50000 != 0) {
+            req.flash('error', 'Số tiền rút phải là bội số của 50000');
             return res.redirect('/user/withdraw');
         }
 
+        if((amountInt * 105 / 100) > req.getUser.balance) {
+            req.flash('error', 'Số dư trong ví không đủ');
+            return res.redirect('/user/withdraw');
+        }
 
+        CreditCard.findOne({card_no})
+            .then(card => {
+                if(!card) {
+                    req.flash('error', 'Số thẻ không chính xác');
+                    return res.redirect('/user/withdraw');
+                }
+
+                const cardExpired = normalizeDate(card.expired);
+
+                if(cardExpired != expired) {
+                    req.flash('error', 'Sai ngày hết hạn');
+                    return res.redirect('/user/withdraw');
+                }
+
+                if(card.cvv_code !== cvv_code) {
+                    req.flash('error', 'Sai mã CVV');
+                    return res.redirect('/user/withdraw');
+                }
+
+                var trade = {
+                    action: 'Rút tiền',
+                    amount: amountInt,
+                    fee: amountInt * 5 / 100,
+                    note: note,
+                    createdAt: new Date(),
+                    status: (amountInt > 5000000) ? 'Đang chờ duyệt' : 'Hoàn thành',
+                }
+                req.getUser.history.push(trade);
+
+                if(trade.status === 'Hoàn thành') {
+                    req.getUser.balance -= (amountInt * 105 / 100);
+                    req.getUser.save();
+
+                    card.balance += amountInt;
+                    card.save();
+                    req.flash('success', 'Rút tiền thành công');
+                }
+                else {
+                    req.getUser.save();
+                    req.flash('success', 'Yêu cầu rút tiền thành công. Vui lòng chờ xét duyệt');
+                }
+
+                return res.redirect('/user');
+            })
+            .catch(next);
+    },
+
+    getTransferPage: function(req, res, next) {
+        User.findOne({username: req.session.username})
+            .then(user => {
+                const balance = user.balance;
+                const error = req.flash('error') || '';
+                return res.render('transfer', {error, balance});
+            })
+            .catch(next);
+    },
+
+    postTransferPage: function(req, res, next) {
+        checkErrorInput(req, res, '/user/transfer');
+
+        const { phone, amount, note, isFeePayer } = req.body;
+
+        User.findOne({phone})
+            .then(user => {
+                if(!user) {
+                    req.flash('error', 'Tài khoản này không tồn tại');
+                    return res.redirect('/user/transfer');
+                }
+
+                var amountInt = parseInt(amount);
+                
+                if(isFeePayer) {
+                    if((amountInt * 105 / 100) > req.getUser.balance) {
+                        req.flash('error', 'Số dư trong ví không đủ');
+                        return res.redirect('/user/transfer');
+                    }
+                }
+                else {
+                    if((amountInt) > req.getUser.balance) {
+                        req.flash('error', 'Số dư trong ví không đủ');
+                        return res.redirect('/user/transfer');
+                    }
+                }
+
+                var trade = {
+                    action: 'Chuyển tiền',
+                    amount: amountInt,
+                    fee: (isFeePayer) ? (amountInt * 5 / 100) : 0,
+                    note: note,
+                    createdAt: new Date(),
+                    status: (amountInt > 5000000) ? 'Đang chờ duyệt' : 'Hoàn thành',
+                }
+                req.getUser.history.push(trade);
+
+                if(trade.status === 'Hoàn thành') {
+                    req.getUser.balance -= (isFeePayer) ? (amountInt * 105 / 100) : amountInt;
+                    req.getUser.save();
+
+                    user.balance += (isFeePayer) ? amountInt : (amountInt * 95 / 100);
+                    user.save();
+                    req.flash('success', 'Chuyển tiền thành công');
+                }
+                else {
+                    req.getUser.save();
+                    req.flash('success', 'Yêu cầu chuyển tiền thành công. Vui lòng chờ xét duyệt');
+                }
+
+                return res.redirect('/user');                 
+            })
+            .catch(next);
     }
 
 

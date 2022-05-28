@@ -31,6 +31,12 @@ router.get('/getUsers', checkLogin, checkUser, UserController.getUserInfo)
 // Deposit money
 router.get('/deposit', checkLogin, UserController.getDepositPage)
 router.post('/deposit', middleware.getUser, UserController.postDepositPage);
-// Withdraw money
 
+// Withdraw money
+router.get('/withdraw', checkLogin, UserController.getWithdrawPage)
+router.post('/withdraw', middleware.getUser, UserController.postWithdrawPage);
+
+// Transfer money
+router.get('/transfer', checkLogin, UserController.getTransferPage);
+router.post('/transfer', middleware.getUser, UserController.postTransferPage);
 module.exports = router

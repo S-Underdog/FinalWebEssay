@@ -328,3 +328,13 @@ h6 span {
     width: auto;
     display: block;
 }
+
+.payment-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    max-width: 700px;
+    padding: 30px 10px;
+}
+
