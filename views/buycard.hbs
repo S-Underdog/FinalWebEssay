@@ -1,0 +1,52 @@
+<div class="container p-0 mx-auto payment-box">
+    <div class="card px-4 p-3">
+        <p class="h8 py-3">Payment Details</p>
+        <span class="mb-3" style="color:black">Số dư trong ví: {{balance}} VND</span>
+        <form action="/user/buycard" method="POST">
+            <div class="row gx-3">
+                <div class="col-4">
+                    <div class="d-flex flex-column">
+                        <label for="sel1">Nhà mạng:</label>
+                        <select class="form-control" id="sel1" name="provider_name">
+                            <option>Viettel</option>
+                            <option>Mobiphone</option>
+                            <option>Vinaphone</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-8">
+                    <div class="d-flex flex-column">
+                        <label for="sel1">Mệnh giá thẻ:</label>
+                        <select name="card_value" class="form-control mb-3" id="sel1">
+                            <option>10000</option>
+                            <option>20000</option>
+                            <option>50000</option>
+                            <option>100000</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="d-flex flex-column">
+                        <label for="quantity">Số lượng:</label>
+                        <input value="1" min="1" max="5" name="quantity" id="quantity" type="number" class="form-control mb-3 text-center">
+                    </div>
+                </div>
+                <div class="col-9">
+                    <label for="status"></label>
+                    <div class="d-flex flex-column">
+                        {{#if error}}
+                            <span class="alert alert-danger">{{error}}</span>
+                        {{/if}}
+
+                        
+
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-success">Mua</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,13 +1,16 @@
 const { validationResult } = require('express-validator')
 const fs = require('fs')
 const nodemailer = require('nodemailer')
-const User = require('../models/UserModel')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
-const CreditCard = require('../models/CreditCard')
 const { stopWithdraw, normalizeDate, checkErrorInput } = require('../middleware/functions');
+const otpGenerator = require('otp-generator');
 
 
+const User = require('../models/UserModel')
+const CreditCard = require('../models/CreditCard')
+const OTP = require('../models/OTP')
+const Provider = require('../models/Provider')
 
 function fileValidator(req) {
     let message
@@ -422,55 +425,155 @@ const UserController = {
         checkErrorInput(req, res, '/user/transfer');
 
         const { phone, amount, note, isFeePayer } = req.body;
-
+        
         User.findOne({phone})
-            .then(user => {
-                if(!user) {
+            .then(receiver => {
+                if(!receiver) {
                     req.flash('error', 'Tài khoản này không tồn tại');
                     return res.redirect('/user/transfer');
                 }
 
                 var amountInt = parseInt(amount);
-                
-                if(isFeePayer) {
-                    if((amountInt * 105 / 100) > req.getUser.balance) {
-                        req.flash('error', 'Số dư trong ví không đủ');
+                var total = (isFeePayer) ? amountInt * 105 / 100 : amountInt;
+
+                if(total > req.getUser.balance) {
+                    req.flash('error', 'Số dư trong ví không đủ');
                         return res.redirect('/user/transfer');
-                    }
-                }
-                else {
-                    if((amountInt) > req.getUser.balance) {
-                        req.flash('error', 'Số dư trong ví không đủ');
-                        return res.redirect('/user/transfer');
-                    }
                 }
 
                 var trade = {
                     action: 'Chuyển tiền',
+                    receiver: receiver.fullname,
                     amount: amountInt,
                     fee: (isFeePayer) ? (amountInt * 5 / 100) : 0,
                     note: note,
                     createdAt: new Date(),
                     status: (amountInt > 5000000) ? 'Đang chờ duyệt' : 'Hoàn thành',
                 }
+
+                req.flash('name', receiver.fullname);
+                req.flash('amount', amountInt);
+                req.flash('fee', trade.fee);
+                req.flash('note', trade.note);
+                req.session.phone = phone;
+                req.session.trade = trade;
+                return res.redirect('/user/transfer/confirm');                    
+            })
+            .catch(next);
+    },
+
+    getTransferConfirm: function(req, res, next) {
+        const receiver = req.flash('name') || '';
+        const amount = req.flash('amount') || 0;
+        const fee = req.flash('fee') || 0;
+        const note = req.flash('note') || '';
+
+        return res.render('confirm', {receiver, amount, fee, note});
+    },
+
+    postTransferConfirm: function(req, res, next) {
+        const phone = req.session.phone;
+        console.log(phone);
+        User.findOne({phone})
+            .then(async receiver => {
+                const otp = otpGenerator.generate(6, { alphabets: false, upperCase: false, specialChars: false });
+                const otp_instance = await OTP.create({
+                    otp: otp,
+                    verified: false,
+                });
+        
+                var details = {
+                    "timestamp": new Date(), 
+                    "check": phone,
+                    "success": true,
+                    "message":"OTP sent to user",
+                    "otp_id": otp_instance._id
+                }
+        
+                const message = require('../templates/SMS/phone_verification');
+                var phone_mess = message(otp, receiver.fullname);
+                var params = {
+                    Message: phone_mess,
+                    PhoneNumber: phone
+                };
+
+                var publishTextPromise = new AWS.SNS({ apiVersion: '2010-03-31' }).publish(params).promise();
+                publishTextPromise
+                    .then(data => {
+                        console.log('success');
+                    })
+                    .catch(err => {
+                        console.log('fail');
+                });
+
+                const trade = req.session.trade;
                 req.getUser.history.push(trade);
-
+        
                 if(trade.status === 'Hoàn thành') {
-                    req.getUser.balance -= (isFeePayer) ? (amountInt * 105 / 100) : amountInt;
+                    req.getUser.balance -= (trade.amount + trade.fee);
                     req.getUser.save();
-
-                    user.balance += (isFeePayer) ? amountInt : (amountInt * 95 / 100);
-                    user.save();
+        
+                    receiver.balance += (trade.fee == 0) ? (trade.amount - fee) : trade.amount;
+                    receiver.save();
                     req.flash('success', 'Chuyển tiền thành công');
                 }
                 else {
                     req.getUser.save();
                     req.flash('success', 'Yêu cầu chuyển tiền thành công. Vui lòng chờ xét duyệt');
                 }
-
-                return res.redirect('/user');                 
+        
+                return res.redirect('/user'); 
             })
             .catch(next);
+    },
+
+    getMobileCardPage: function(req, res, next) {
+        const phone = req.flash('phone') || '';
+        const error = req.flash('error') || '';
+
+        return res.render('buycard', {error, phone});
+    },
+    
+    postMobileCardPage: function(req, res, next) {
+        const { provider_name, card_value, quantity} = req.body;
+        
+        var total = card_value * quantity;
+        if(total > req.getUser.balance) {
+            req.flash('error', 'Số dư trong ví không đủ');
+            return res.redirect('/user/buycard');
+        }
+
+        Provider.findOne({provider_name})
+            .then(provider => {
+                let listCard = [];
+                for(let i = 0; i < quantity; i++) {
+                    var newCard = provider.provider_code + Math.random().toString().slice(-7,-2);
+                    listCard.push(newCard);
+                }
+
+                const trade = {
+                    action: `Mua thẻ ${provider.provider_name}`,
+                    amount: total,
+                    fee: 0,
+                    receive_code: listCard,
+                    createdAt: new Date(),
+                    status: 'Hoàn thành',
+                }
+
+                req.getUser.history.push(trade);
+                req.getUser.balance -= (total + trade.fee);
+                req.getUser.save();
+
+                req.flash('success', 'Mua thẻ thành công');
+                return res.redirect('/user/notification');
+            })
+            .catch(next);
+    },
+
+    getNotificationPage: function(req, res, next) {
+        const success = req.flash('success') || '';
+        
+        return res.render('notification', {success})
     }
 
 

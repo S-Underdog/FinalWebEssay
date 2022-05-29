@@ -11,7 +11,7 @@ const database = require('./config/db')
 const path = require('path');
 // Import router
 const UserRouter = require('./routers/UserRouter')
-
+const Provider = require('./models/Provider');
 // View engine
 app.set('view engine', 'hbs')
 app.engine('hbs', handlebars.engine({
@@ -35,6 +35,28 @@ app.use((req, res, next) => {
     req.vars = { root: __dirname }
     next()
 })
+
+Provider.find({})
+    .then(providers => {
+        if(providers.length == 0) {
+            const viettel = {
+                provider_name: 'Viettel',
+                provider_code: '11111'
+            }
+            const mobi = {
+                provider_name: 'Mobiphone',
+                provider_code: '22222'
+            }
+            const vina = {
+                provider_name: 'Vinaphone',
+                provider_code: '33333'
+            }
+
+            new Provider(viettel).save();
+            new Provider(mobi).save();
+            new Provider(vina).save();
+        }
+    })
 
 app.get('/', (req, res) => {
     if (!req.session.username) {

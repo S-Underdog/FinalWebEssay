@@ -8,6 +8,7 @@ const checkUser = require('../auth/checkUser')
 const resetPasswordValidator = require('../validators/resetPasswordValidator')
 const middleware = require('../middleware/index')
 
+
 router.get('/register', UserController.getRegister)
 // Add one
 router.post('/register', middleware.multipleUpload, registerValidator, UserController.postRegister)
@@ -39,4 +40,11 @@ router.post('/withdraw', middleware.getUser, UserController.postWithdrawPage);
 // Transfer money
 router.get('/transfer', checkLogin, UserController.getTransferPage);
 router.post('/transfer', middleware.getUser, UserController.postTransferPage);
+router.get('/transfer/confirm', checkLogin, UserController.getTransferConfirm);
+router.post('/transfer/confirm', checkLogin, middleware.getUser, UserController.postTransferConfirm);
+
+// Mobile card
+router.get('/buycard', checkLogin, UserController.getMobileCardPage);
+router.post('/buycard', middleware.getUser, UserController.postMobileCardPage);
+router.get('/notification', UserController.getNotificationPage);
 module.exports = router

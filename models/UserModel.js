@@ -4,7 +4,7 @@ const Schema = mongoose.Schema
 
 const UserSchema = new Schema({
     phone: {
-        type: Number,
+        type: String,
         required: true,
         unique: true
     },
@@ -62,9 +62,10 @@ const UserSchema = new Schema({
             {
                 trade_id: String,
                 action: String,
+                receiver: String,
                 amount: Number,
                 fee: Number,
-                receive_code: String,
+                receive_code: [String],
                 note: String,
                 createdAt: Date,
                 status: String,

@@ -1,0 +1,29 @@
+<div class="container">
+    <form action="/user/transfer/confirm" method="post">
+        <table class="table table-dark">
+        
+        <tbody>
+            <tr>
+            <td>Người nhận</td>
+            <td>{{receiver}}</td>
+            </tr>
+            <tr>
+            
+            <td>Số tiền</td>
+            <td>{{amount}}</td>
+            </tr>
+            <tr>
+        
+            <td>Phí chuyển</td>
+            <td>{{fee}}</td>
+            </tr>
+            <tr>
+        
+            <td>Lời nhắn</td>
+            <td>{{note}}</td>
+            </tr>
+        </tbody>
+    </table>
+    <button type="submit" class="btn btn-success">Xác nhận gửi</button>
+    </form>
+</div>
