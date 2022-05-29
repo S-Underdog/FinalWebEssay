@@ -528,10 +528,15 @@ const UserController = {
     },
 
     getMobileCardPage: function(req, res, next) {
-        const phone = req.flash('phone') || '';
-        const error = req.flash('error') || '';
+        User.findOne({username: req.session.username})
+            .then(user => {
+                const phone = req.flash('phone') || '';
+                const error = req.flash('error') || '';
+                const balance = user.balance;
+                return res.render('buycard', {error, phone, balance});
+            })
+            .catch(next);
 
-        return res.render('buycard', {error, phone});
     },
     
     postMobileCardPage: function(req, res, next) {

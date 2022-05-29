@@ -41,7 +41,7 @@ router.post('/withdraw', middleware.getUser, UserController.postWithdrawPage);
 router.get('/transfer', checkLogin, UserController.getTransferPage);
 router.post('/transfer', middleware.getUser, UserController.postTransferPage);
 router.get('/transfer/confirm', checkLogin, UserController.getTransferConfirm);
-router.post('/transfer/confirm', checkLogin, middleware.getUser, UserController.postTransferConfirm);
+router.post('/transfer/confirm', middleware.getUser, UserController.postTransferConfirm);
 
 // Mobile card
 router.get('/buycard', checkLogin, UserController.getMobileCardPage);
